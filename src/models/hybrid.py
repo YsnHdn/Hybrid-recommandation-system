@@ -110,7 +110,7 @@ class HybridModel:
         print(f"Configuration Hybrid sauvegardée : {filepath}")
         
         
-        @classmethod
+    @classmethod
     def load(
         cls, 
         filepath: str,
