@@ -2,6 +2,7 @@
 Modèle de Collaborative Filtering basé sur SVD
 """
 import pandas as pd
+from sklearn.model_selection import train_test_split
 from surprise import SVD, Dataset, Reader, Trainset
 from typing import List
 
@@ -43,7 +44,7 @@ class CollaborativeModel:
         """
         
         reader = Reader(rating_scale=(1,5))
-        data = Dataset.load_from_df(ratings_df[['user_id' , 'item_id' , 'ratings']] , reader = reader)
+        data = Dataset.load_from_df(ratings_df[['user_id' , 'item_id' , 'rating']] , reader = reader)
         
         trainset = data.build_full_trainset()
         
@@ -54,6 +55,49 @@ class CollaborativeModel:
         print("Entraînement terminé")
         
     
+    def fit_and_evaluate(self, ratings_df: pd.DataFrame, test_size: float = 0.2):
+        """
+        Entraîne le modèle et l'évalue sur un test set
+        
+        Args:
+            ratings_df: DataFrame avec colonnes user_id, item_id, rating
+            test_size: Proportion du test set (default 0.2)
+            
+        Returns:
+            dict avec 'rmse' et 'mae'
+        """
+        from surprise.model_selection import train_test_split
+        from surprise import accuracy
+        
+        # Créer le dataset
+        reader = Reader(rating_scale=(1, 5))
+        data = Dataset.load_from_df(
+            ratings_df[['user_id', 'item_id', 'rating']], 
+            reader
+        )
+        
+        # Train/Test split
+        trainset, testset = train_test_split(data, test_size=test_size, random_state=42)
+        
+        # Entraîner
+        print(f"Entraînement sur {trainset.n_ratings} ratings...")
+        self.algo.fit(trainset)
+        self.is_trained = True
+        
+        # Évaluer sur test set
+        print(f"Évaluation sur {len(testset)} ratings...")
+        predictions = self.algo.test(testset)
+        
+        # Calculer métriques
+        rmse = accuracy.rmse(predictions, verbose=False)
+        mae = accuracy.mae(predictions, verbose=False)
+        
+        return {
+            'rmse': rmse,
+            'mae': mae
+        }
+        
+        
     
     def predict(self, user_id: int, item_id: int) -> float:
         """
