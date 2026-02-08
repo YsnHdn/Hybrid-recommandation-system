@@ -18,6 +18,9 @@ COSINE_SIM_PATH = MODELS_DIR / "cosine_sim_matrix.pkl"
 TFIDF_VECTORIZER_PATH = MODELS_DIR / "tfidf_vectorizer.pkl"
 HYBRID_CONFIG_PATH = MODELS_DIR / "hybrid_config.pkl"
 
+## Mlflow 
+MLFLOW_TRACKING_URI = 'file:./mlruns'
+MLFLOW_EXPERIMENT_NAME = 'recommendation_system' 
 
 SVD_CONFIG = {
     'n_factors': 100,
