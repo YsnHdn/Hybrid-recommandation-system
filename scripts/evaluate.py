@@ -14,8 +14,14 @@ from src.models.content_based import ContentBasedModel
 from src.models.hybrid import HybridModel
 from src.utils.preprocessing import create_user_train_test_split, get_relevant_items
 from src.utils.metrics import precision_at_k, recall_at_k, ndcg_at_k
-from src.config import SVD_MODEL_PATH, COSINE_SIM_PATH, HYBRID_CONFIG_PATH, EVALUATION_CONFIG
+from src.config import SVD_CONFIG, SVD_MODEL_PATH, COSINE_SIM_PATH, HYBRID_CONFIG_PATH, EVALUATION_CONFIG , MLFLOW_EXPERIMENT_NAME , MLFLOW_TRACKING_URI
 
+
+import mlflow
+import mlflow.sklearn
+
+mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
 
 def evaluate_model(model, model_name, train_df, test_df, movies_df, k_values, sample_users=100):
     """
@@ -99,25 +105,66 @@ def main():
     all_results = []
     
     # Collaborative
-    collab_results = evaluate_model(
-        collab_model, "Collaborative", 
-        train_ratings, test_ratings, movies, k_values
-    )
-    all_results.append(collab_results)
+    
+    with mlflow.start_run(run_name="Evaluation Collaborative"):
+        
+        mlflow.log_params(SVD_CONFIG , {
+            "model_type" : 'Collaborative',
+            "Sample users" : 100,
+            "k_values" : str(k_values)
+        })
+        
+        collab_results = evaluate_model(
+            collab_model, "Collaborative", 
+            train_ratings, test_ratings, movies, k_values
+        )
+        all_results.append(collab_results)
+
+        for k in k_values :
+            subset = collab_results[collab_results['k'] == k]
+            mlflow.log_metric(f"precision_at_{k}", subset['precision'].mean())
+            mlflow.log_metric(f"recall_at_{k}", subset['recall'].mean())
+            mlflow.log_metric(f"ndcg_at_{k}", subset['ndcg'].mean())
+        
+    
     
     # Content-Based
-    content_results = evaluate_model(
-        content_model, "Content-Based",
-        train_ratings, test_ratings, movies, k_values
-    )
-    all_results.append(content_results)
+    with mlflow.start_run(run_name="Evaluation_ContentBased"):
+        mlflow.log_param("model_type", "Content-Based")
+        mlflow.log_param("sample_users", 100)
+        mlflow.log_param("k_values", str(k_values))
+        
+        content_results = evaluate_model(
+            content_model, "Content-Based",
+            train_ratings, test_ratings, movies, k_values
+        )
+        all_results.append(content_results)
+        
+        # Logger les métriques moyennes
+        for k in k_values:
+            subset = content_results[content_results['k'] == k]
+            mlflow.log_metric(f"precision_at_{k}", subset['precision'].mean())
+            mlflow.log_metric(f"recall_at_{k}", subset['recall'].mean())
+            mlflow.log_metric(f"ndcg_at_{k}", subset['ndcg'].mean())
     
     # Hybrid
-    hybrid_results = evaluate_model(
-        hybrid_model, "Hybrid",
-        train_ratings, test_ratings, movies, k_values
-    )
-    all_results.append(hybrid_results)
+    with mlflow.start_run(run_name="Evaluation_Hybrid"):
+        mlflow.log_param("model_type", "Hybrid")
+        mlflow.log_param("sample_users", 100)
+        mlflow.log_param("k_values", str(k_values))
+        
+        hybrid_results = evaluate_model(
+            hybrid_model, "Hybrid",
+            train_ratings, test_ratings, movies, k_values
+        )
+        all_results.append(hybrid_results)
+        
+        # Logger les métriques moyennes
+        for k in k_values:
+            subset = hybrid_results[hybrid_results['k'] == k]
+            mlflow.log_metric(f"precision_at_{k}", subset['precision'].mean())
+            mlflow.log_metric(f"recall_at_{k}", subset['recall'].mean())
+            mlflow.log_metric(f"ndcg_at_{k}", subset['ndcg'].mean())
     
     # Combiner et afficher résultats
     print("\n" + "="*70)
