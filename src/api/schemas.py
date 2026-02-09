@@ -88,3 +88,21 @@ class SimilarItemsRequest(BaseModel):
                 "n": 10
             }
         }
+
+class SimilarItemsResponse(BaseModel):
+    """
+    Réponse contenant les films similaires
+    """
+    item_id: int
+    similar_items: List[MovieRecommendation]
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "item_id": 50,
+                "similar_items": [
+                    {"item_id": 181, "title": "Return of the Jedi (1983)", "score": 0.95},
+                    {"item_id": 172, "title": "Empire Strikes Back, The (1980)", "score": 0.92}
+                ]
+            }
+        }
